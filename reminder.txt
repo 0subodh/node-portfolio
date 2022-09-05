@@ -1,0 +1,80 @@
+// route and route handlers on different methods
+app.get('/api/v1/tours', getAllTours);
+app.get('/api/v1/tours/:id', getSingleTour);
+app.post('/api/v1/tours', createTour);
+app.patch('/api/v1/tours/:id', updateTour);
+app.delete('/api/v1/tours/:id', deleteTour);
+
+// eslint config file installation code
+npm i eslint prettier eslint-config-prettier eslint-plugin-prettier eslint-config-airbnb eslint-plugin-node eslint-plugin-import eslint-plugin-jsx-a11y eslint-plugin-react --save-dev
+
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Hello World' });
+});
+
+app.post('/', (req, res) => {
+  res.status(200).send('You can post to this endpoint');
+});
+
+app.listen(PORT, () => {
+  console.log(`App running on PORT ${PORT}...`);
+});
+
+// filter, sort, paginate, limitFields
+exports.getAllTours = async (req, res) => {
+  try {
+    // filtering
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach((el) => delete queryObj[el]);
+    // advanced filtering
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
+    console.log(req.query);
+    console.log(queryStr);
+
+    let query = Tour.find(JSON.parse(queryStr)); // buidling query
+
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('price');
+    }
+
+    if (req.query.fields) {
+      console.log(req.query.fields);
+      const fieldsName = req.query.fields.split(',').join(' ');
+      console.log(fieldsName);
+      query = query.select(fieldsName);
+    } else {
+      query = query.select('-__v');
+    }
+
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 5;
+    const skip = (page - 1) * limit;
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error('Page does not exist');
+    }
+
+    query = query.skip(skip).limit(limit);
+
+    const tours = await query; // query executes here
+
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tour: tours,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: 'Could Not Found Tour',
+    });
+  }
+};
