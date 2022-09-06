@@ -74,10 +74,9 @@ const tourSchema = new mongoose.Schema(
     },
 
     startLocation: {
-      // GeoJSON
+      // GeoJSON coordinates: [longitude, latitude]
       type: {
         type: String,
-        default: 'Point',
         enum: ['Point'],
       },
       coordinates: [Number],
@@ -89,7 +88,6 @@ const tourSchema = new mongoose.Schema(
       {
         type: {
           type: String,
-          default: 'Point',
           enum: ['Point'],
         },
         coordinates: [Number],
@@ -101,6 +99,7 @@ const tourSchema = new mongoose.Schema(
     guides: [
       {
         type: mongoose.Schema.ObjectId,
+        // this referencing is done automatically by mongoDB, not necessary to have User model imported
         ref: 'User',
       },
     ],
@@ -129,6 +128,7 @@ tourSchema.pre('save', function (next) {
 });
 
 /*
+// implementing embedding while creating new tour
 // embedding guides in tourModel
 
 tourSchema.pre('save', async function (next) {
